@@ -951,13 +951,15 @@ ExtendBufferedRelTo(BufferManagerRelation bmr,
 		 bmr.smgr->smgr_cached_nblocks[fork] == InvalidBlockNumber) &&
 		!smgrexists(bmr.smgr, fork))
 	{
-		LockRelationForExtension(bmr.rel, ExclusiveLock);
+		LockRelationForkForExtension(bmr.smgr->smgr_rlocator.locator,
+									 fork, ExclusiveLock);
 
 		/* recheck, fork might have been created concurrently */
 		if (!smgrexists(bmr.smgr, fork))
 			smgrcreate(bmr.smgr, fork, flags & EB_PERFORMING_RECOVERY);
 
-		UnlockRelationForExtension(bmr.rel, ExclusiveLock);
+		UnlockRelationForkForExtension(bmr.smgr->smgr_rlocator.locator,
+									   fork, ExclusiveLock);
 	}
 
 	/*
@@ -2637,7 +2639,8 @@ ExtendBufferedRelShared(BufferManagerRelation bmr,
 	 * we get the lock.
 	 */
 	if (!(flags & EB_SKIP_EXTENSION_LOCK))
-		LockRelationForExtension(bmr.rel, ExclusiveLock);
+		LockRelationForkForExtension(bmr.smgr->smgr_rlocator.locator,
+									 fork, ExclusiveLock);
 
 	/*
 	 * If requested, invalidate size cache, so that smgrnblocks asks the
@@ -2673,7 +2676,8 @@ ExtendBufferedRelShared(BufferManagerRelation bmr,
 		if (extend_by == 0)
 		{
 			if (!(flags & EB_SKIP_EXTENSION_LOCK))
-				UnlockRelationForExtension(bmr.rel, ExclusiveLock);
+				UnlockRelationForkForExtension(bmr.smgr->smgr_rlocator.locator,
+											   fork, ExclusiveLock);
 			*extended_by = extend_by;
 			return first_block;
 		}
@@ -2815,7 +2819,8 @@ ExtendBufferedRelShared(BufferManagerRelation bmr,
 	 * take noticeable time.
 	 */
 	if (!(flags & EB_SKIP_EXTENSION_LOCK))
-		UnlockRelationForExtension(bmr.rel, ExclusiveLock);
+		UnlockRelationForkForExtension(bmr.smgr->smgr_rlocator.locator,
+									   fork, ExclusiveLock);
 
 	pgstat_count_io_op_time(IOOBJECT_RELATION, io_context, IOOP_EXTEND,
 							io_start, 1, extend_by * BLCKSZ);

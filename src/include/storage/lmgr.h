@@ -56,6 +56,17 @@ extern void LockRelationIdForSession(LockRelId *relid, LOCKMODE lockmode);
 extern void UnlockRelationIdForSession(LockRelId *relid, LOCKMODE lockmode);
 
 /* Lock a relation for extension */
+extern void LockRelationForkForExtension(RelFileLocator rlocator,
+										 ForkNumber forknum,
+										 LOCKMODE lockmode);
+extern void UnlockRelationForkForExtension(RelFileLocator rlocator,
+										   ForkNumber forknum,
+										   LOCKMODE lockmode);
+extern bool ConditionalLockRelationForkForExtension(RelFileLocator rlocator,
+													ForkNumber forknum,
+													LOCKMODE lockmode);
+extern int RelationForkExtensionLockWaiterCount(RelFileLocator rlocator,
+												ForkNumber forknum);
 extern void LockRelationForExtension(Relation relation, LOCKMODE lockmode);
 extern void UnlockRelationForExtension(Relation relation, LOCKMODE lockmode);
 extern bool ConditionalLockRelationForExtension(Relation relation,

@@ -410,6 +410,65 @@ UnlockRelationIdForSession(LockRelId *relid, LOCKMODE lockmode)
 	LockRelease(&tag, lockmode, true);
 }
 
+void
+LockRelationForkForExtension(RelFileLocator rlocator,
+							 ForkNumber forknum,
+							 LOCKMODE lockmode)
+{
+	LOCKTAG		tag;
+
+	SET_LOCKTAG_RELATION_EXTEND(tag,
+								rlocator.dbOid,
+								rlocator.relNumber,
+								forknum);
+
+	(void) LockAcquire(&tag, lockmode, false, false);
+}
+
+bool
+ConditionalLockRelationForkForExtension(RelFileLocator rlocator,
+										ForkNumber forknum,
+										LOCKMODE lockmode)
+{
+	LOCKTAG		tag;
+
+	SET_LOCKTAG_RELATION_EXTEND(tag,
+								rlocator.dbOid,
+								rlocator.relNumber,
+								forknum);
+
+	return (LockAcquire(&tag, lockmode, false, true) != LOCKACQUIRE_NOT_AVAIL);
+}
+
+int
+RelationForkExtensionLockWaiterCount(RelFileLocator rlocator,
+									 ForkNumber forknum)
+{
+	LOCKTAG		tag;
+
+	SET_LOCKTAG_RELATION_EXTEND(tag,
+								rlocator.dbOid,
+								rlocator.relNumber,
+								forknum);
+
+	return LockWaiterCount(&tag);
+}
+
+void
+UnlockRelationForkForExtension(RelFileLocator rlocator,
+							   ForkNumber forknum,
+							   LOCKMODE lockmode)
+{
+	LOCKTAG		tag;
+
+	SET_LOCKTAG_RELATION_EXTEND(tag,
+								rlocator.dbOid,
+								rlocator.relNumber,
+								forknum);
+
+	LockRelease(&tag, lockmode, false);
+}
+
 /*
  *		LockRelationForExtension
  *
@@ -423,13 +482,7 @@ UnlockRelationIdForSession(LockRelId *relid, LOCKMODE lockmode)
 void
 LockRelationForExtension(Relation relation, LOCKMODE lockmode)
 {
-	LOCKTAG		tag;
-
-	SET_LOCKTAG_RELATION_EXTEND(tag,
-								relation->rd_lockInfo.lockRelId.dbId,
-								relation->rd_lockInfo.lockRelId.relId);
-
-	(void) LockAcquire(&tag, lockmode, false, false);
+	LockRelationForkForExtension(relation->rd_locator, MAIN_FORKNUM, lockmode);
 }
 
 /*
@@ -441,13 +494,9 @@ LockRelationForExtension(Relation relation, LOCKMODE lockmode)
 bool
 ConditionalLockRelationForExtension(Relation relation, LOCKMODE lockmode)
 {
-	LOCKTAG		tag;
-
-	SET_LOCKTAG_RELATION_EXTEND(tag,
-								relation->rd_lockInfo.lockRelId.dbId,
-								relation->rd_lockInfo.lockRelId.relId);
-
-	return (LockAcquire(&tag, lockmode, false, true) != LOCKACQUIRE_NOT_AVAIL);
+	return ConditionalLockRelationForkForExtension(relation->rd_locator,
+												   MAIN_FORKNUM,
+												   lockmode);
 }
 
 /*
@@ -458,13 +507,8 @@ ConditionalLockRelationForExtension(Relation relation, LOCKMODE lockmode)
 int
 RelationExtensionLockWaiterCount(Relation relation)
 {
-	LOCKTAG		tag;
-
-	SET_LOCKTAG_RELATION_EXTEND(tag,
-								relation->rd_lockInfo.lockRelId.dbId,
-								relation->rd_lockInfo.lockRelId.relId);
-
-	return LockWaiterCount(&tag);
+	return RelationForkExtensionLockWaiterCount(relation->rd_locator,
+												MAIN_FORKNUM);
 }
 
 /*
@@ -473,13 +517,9 @@ RelationExtensionLockWaiterCount(Relation relation)
 void
 UnlockRelationForExtension(Relation relation, LOCKMODE lockmode)
 {
-	LOCKTAG		tag;
-
-	SET_LOCKTAG_RELATION_EXTEND(tag,
-								relation->rd_lockInfo.lockRelId.dbId,
-								relation->rd_lockInfo.lockRelId.relId);
-
-	LockRelease(&tag, lockmode, false);
+	UnlockRelationForkForExtension(relation->rd_locator,
+								   MAIN_FORKNUM,
+								   lockmode);
 }
 
 /*
