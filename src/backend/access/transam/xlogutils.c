@@ -489,6 +489,13 @@ XLogReadBufferExtended(RelFileLocator rlocator, ForkNumber forknum,
 	 */
 	smgrcreate(smgr, forknum, true);
 
+	/*
+	 * Invalidate the cache if the cached value is 0, and let smgrnblocks ask
+	 * the kernel. The relation might be longer than the cached value due to
+	 * relation extension before crash.
+	 */
+	if (smgr->smgr_cached_nblocks[forknum] == 0)
+		smgr->smgr_cached_nblocks[forknum] = InvalidBlockNumber;
 	lastblock = smgrnblocks(smgr, forknum);
 
 	if (blkno < lastblock)

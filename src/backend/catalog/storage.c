@@ -993,6 +993,13 @@ smgr_redo(XLogReaderState *record)
 
 		reln = smgropen(xlrec->rlocator, INVALID_PROC_NUMBER);
 		smgrcreate(reln, xlrec->forkNum, true);
+
+		if (xlrec->forkNum == MAIN_FORKNUM)
+		{
+			reln->smgr_cached_nblocks[MAIN_FORKNUM] = 0;
+			reln->smgr_cached_nblocks[FSM_FORKNUM] = 0;
+			reln->smgr_cached_nblocks[VISIBILITYMAP_FORKNUM] = 0;
+		}
 	}
 	else if (info == XLOG_SMGR_TRUNCATE)
 	{
